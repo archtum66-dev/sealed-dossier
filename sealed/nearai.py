@@ -120,7 +120,7 @@ class NearAI:
         self,
         model: str,
         messages: list[dict],
-        max_tokens: int = 2000,
+        max_tokens: int = 6000,
         temperature: float = 0,
     ) -> ChatResult:
         body_obj = {

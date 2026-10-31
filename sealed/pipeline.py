@@ -93,7 +93,7 @@ def ask(
     api: NearAI | None = None,
     dry_run: bool = False,
     allow_incognito: bool = False,
-    max_tokens: int = 2000,
+    max_tokens: int = 6000,
     rebuild: bool = True,
 ) -> dict:
     entities = load_entities(entities_path)

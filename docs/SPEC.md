@@ -87,7 +87,7 @@ class NearAI:
     def __init__(self, api_key: str | None, base_url: str | None = None, timeout: float = 120.0) -> None
     def list_models(self) -> list[dict]
     def tier(self, model_id: str, models: list[dict] | None = None) -> str    # "confidential" | "attested_3p" | "incognito" | "unknown"
-    def chat(self, model: str, messages: list[dict], max_tokens: int = 2000, temperature: float = 0) -> ChatResult
+    def chat(self, model: str, messages: list[dict], max_tokens: int = 6000, temperature: float = 0) -> ChatResult
     def signature(self, chat_id: str, model: str) -> dict
     def attestation_report(self, model: str, nonce: str, signing_address: str) -> dict
 ```
@@ -131,7 +131,7 @@ def verify_chain(root) -> dict         # {"ok": bool, "count": int, "problems": 
 ```python
 def build_request(question, chunks, pseudonymizer, model, max_tokens) -> tuple[dict, list[dict]]   # (request body dict, sources list)
 def ask(question, folder, entities_path, *, model=DEFAULT_MODEL, k=5, receipts_dir=".sealed/receipts", db_path=".sealed/index.db",
-        api=None, dry_run=False, allow_incognito=False, max_tokens=2000, rebuild=True) -> dict
+        api=None, dry_run=False, allow_incognito=False, max_tokens=6000, rebuild=True) -> dict
 ```
 
 Flow: (1) load entities; (2) build the index (if `rebuild`) and search the **original** question; (3) the `Pseudonymizer` is applied to the question and to every chunk; (4) leak check on every string that goes into the request body: any non-empty `leaks()` -> raise `LeakError` (subclass of `Exception`, message lists kinds only, not the matched text); (5) body: system message, then one user message; (6) `dry_run`: return `{"dry_run": True, "request_body": <json string>, "sources": [...], "replaced": counts}` without any network call; (7) tier check (refuse `incognito` and `unknown` unless `allow_incognito`; raise `PolicyError`); (8) `api.chat`, then `api.signature`, then `verify_signature`; if not `ok` raise `VerificationError` (the answer is not shown); (9) fetch the attestation report with a fresh 32-byte random nonce (64 hex chars) and compute `attestation_status` (an `ApiError` here gives level `not_checked`, not a failure); (10) restore the answer, save the receipt, return `{"answer", "receipt_dir", "verification", "attestation_level", "sources", "replaced", "chat_id"}`.

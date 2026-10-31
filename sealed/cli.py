@@ -203,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     p_ask.add_argument("--dry-run", action="store_true")
     p_ask.add_argument("--allow-incognito", action="store_true")
     p_ask.add_argument("--base-url")
-    p_ask.add_argument("--max-tokens", type=int, default=2000)
+    p_ask.add_argument("--max-tokens", type=int, default=6000)
     p_ask.set_defaults(func=_cmd_ask)
 
     p_verify = sub.add_parser("verify", help="verify a receipt offline")

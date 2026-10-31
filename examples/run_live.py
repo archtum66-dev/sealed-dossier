@@ -36,8 +36,8 @@ def _ask_key() -> str:
 
 QUESTIONS = [
     "Welche Mängel wurden gemeldet, wann, und wie hat die Vermieterin reagiert?",
-    "Welche Fristen und Daten ergeben sich aus dem Dossier, und welche Punkte sind noch offen?",
-    "Formuliere drei Sätze zur Begründung der Mietzinsherabsetzung, nur gestützt auf das Dossier.",
+    "Welche Fristen und Termine nennen die Mängelrüge, die Antwort der Vermieterin, der Augenschein und das Schlichtungsgesuch, und was ist noch offen?",
+    "Begründe in drei Sätzen die Herabsetzung des Mietzinses wegen des Schimmels, nur gestützt auf das Dossier.",
 ]
 
 

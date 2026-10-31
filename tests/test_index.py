@@ -58,3 +58,15 @@ def test_rebuild_replaces(tmp_path):
     assert second["chunks"] == first["chunks"]
     assert index.search("Delta", k=1)
     assert not index.search("Alpha", k=1)
+
+
+def test_search_finds_inflected_and_compound_forms(tmp_path):
+    dossier = tmp_path / "dossier"
+    dossier.mkdir()
+    (dossier / "a.txt").write_text("Im Schlafzimmer wächst Schimmel an der Wand.\n", encoding="utf-8")
+    (dossier / "b.txt").write_text("Die Herabsetzung des Mietzinses wird verlangt.\n", encoding="utf-8")
+    index = Index(tmp_path / "idx.db")
+    index.build(dossier)
+    assert [h.file for h in index.search("Schimmels")] == ["a.txt"]
+    assert [h.file for h in index.search("Herabsetzungen")] == ["b.txt"]
+    assert [h.file for h in index.search("Mietzinsen")] == ["b.txt"]

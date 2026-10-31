@@ -155,6 +155,27 @@ def _chunk_file(text: str, max_chars: int) -> list[str]:
     return _merge_paragraphs(paragraphs, max_chars)
 
 
+_SUFFIXES = ("ungen", "ung", "ern", "en", "er", "es", "e", "n", "s")
+
+
+def _stem(word: str) -> str:
+    """Cut one common German ending so that 'Schimmels' also finds 'Schimmel'."""
+    for suffix in _SUFFIXES:
+        if word.endswith(suffix) and len(word) - len(suffix) >= 5:
+            return word[: -len(suffix)]
+    return word
+
+
+def _match_expression(terms: list[str]) -> str:
+    parts: list[str] = []
+    for term in terms:
+        parts.append(f'"{term}"')
+        stem = _stem(term)
+        if len(stem) >= 4:
+            parts.append(f'"{stem}"*')
+    return " OR ".join(dict.fromkeys(parts))
+
+
 def _query_terms(query: str) -> list[str]:
     words = re.findall(r"\w+", query.lower(), flags=re.UNICODE)
     return [w for w in words if len(w) >= 3 and w not in STOP_WORDS]
@@ -211,7 +232,7 @@ class Index:
         terms = _query_terms(query)
         if not terms:
             return []
-        match_expr = " OR ".join(f'"{t}"' for t in terms)
+        match_expr = _match_expression(terms)
         conn = sqlite3.connect(self._db_path)
         try:
             _check_fts5(conn)
