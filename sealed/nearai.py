@@ -56,7 +56,7 @@ class NearAI:
         headers: dict[str, str] | None = None,
     ) -> tuple[int, str]:
         url = f"{self._base_url}{path}"
-        hdrs = dict(headers or {})
+        hdrs = {"User-Agent": "sealed-dossier/0.1", **(headers or {})}
         if auth:
             if not self._api_key:
                 raise ApiError("missing API key")

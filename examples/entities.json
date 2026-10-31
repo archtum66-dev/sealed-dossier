@@ -1,0 +1,19 @@
+{
+  "person": [
+    ["Beat Zumbrunn", "Zumbrunn"],
+    ["Corinne Wyss", "Wyss"],
+    ["Marco Gerber"]
+  ],
+  "org": [
+    ["Alpenblick Immobilien AG", "Alpenblick"],
+    ["Gerber Haustechnik GmbH"]
+  ],
+  "place": [
+    ["Birkenweg 7", "Birkenweg"],
+    ["Hangstrasse 3"],
+    ["Musterdorf"]
+  ],
+  "case": [
+    ["MI.2026.14"]
+  ]
+}

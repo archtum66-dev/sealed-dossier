@@ -39,16 +39,16 @@ class Pseudonymizer:
     def restore(self, text: str) -> str
     def leaks(self, text: str) -> list[str]
     @property
-    def counts(self) -> dict[str, int]      # number of distinct placeholders per kind
+    def counts(self) -> dict[str, int]      # number of distinct placeholders per kind, lower-case kind names: person, org, place, case, ahv, iban, email, phone
     def mapping(self) -> dict[str, str]     # placeholder -> original (stays local, never sent or stored in receipts)
 def load_entities(path) -> dict             # reads JSON, validates, raises ValueError with a clear message
 ```
 
-`entities` maps a kind (`person`, `org`, `place`, `case`, `other`) to a list; each item is a string or a list of strings (aliases of one thing; all map to the same placeholder, the first is the canonical one). Placeholders look like `[PERSON_1]`, `[ORG_1]`, `[PLACE_1]`, `[CASE_1]`, `[OTHER_1]`, numbered per kind in order of first appearance in the **texts passed to `apply`** within one `Pseudonymizer` instance. The same original (case-insensitive) always gets the same placeholder.
+`entities` maps a kind (`person`, `org`, `place`, `case`, `other`) to a list; each item is a string or a list of strings (aliases of one thing; all map to the same placeholder, the first is the canonical one). Placeholders look like `[PERSON_1]`, `[ORG_1]`, `[PLACE_1]`, `[CASE_1]`, `[OTHER_1]`, numbered per kind in order of first appearance in the **texts passed to `apply`** within one `Pseudonymizer` instance (left to right inside a text). The same original (case-insensitive) always gets the same placeholder.
 
 Matching rules for listed entities: case-insensitive; spaces inside an entity match any run of whitespace (including newlines); the match must not start or end inside a word (use `(?<!\w)` and `(?!\w)`, `\w` unicode-aware); an optional genitive `s` after the entity is part of the match (`Musters` -> `[PERSON_1]`); longest alias first so that `Hans Muster` wins over `Muster`.
 
-Built-in patterns, always applied after the listed entities, each with its own kind:
+Built-in patterns, applied **before** the listed entities (an e-mail address such as `corinne.wyss@firma.example` must be replaced as a whole, not after its name parts were cut out of it), each with its own kind. The same matched value (ignoring spaces and dots) always gets the same placeholder:
 
 | Kind | Placeholder | Pattern (case-insensitive) |
 |---|---|---|
@@ -124,7 +124,7 @@ def verify_receipt(path) -> dict       # offline; path = receipt dir or receipt.
 def verify_chain(root) -> dict         # {"ok": bool, "count": int, "problems": [str]}
 ```
 
-`verify_receipt` recomputes: request/response hashes from the stored files, the signature check from `signature.json`, the `receipt_sha256`, and that `chat_id`/`signing_address` match. `verify_chain` additionally checks that each `prev_receipt_sha256` equals the previous `receipt_sha256` and that numbering has no gaps.
+`verify_receipt` recomputes: request/response hashes from the stored files, the signature check from `signature.json`, the `receipt_sha256`, and that `chat_id` (compared with the `id` in the stored response body, not with the signature payload) and `signing_address` match. `request.json` and `response.txt` are written and read as **bytes** (no newline translation). `verify_chain` additionally checks that each `prev_receipt_sha256` equals the previous `receipt_sha256` and that numbering has no gaps.
 
 ## 8. `sealed/pipeline.py`
 
@@ -145,7 +145,7 @@ User message: `Question: <pseudonymised question>\n\nExcerpts:\n[S1] <chunk text
 | Command | Behaviour |
 |---|---|
 | `index FOLDER [--db PATH]` | build the index, print `files` and `chunks` |
-| `ask QUESTION --folder F --entities E [--model M] [--k N] [--receipts DIR] [--dry-run] [--allow-incognito] [--base-url URL] [--max-tokens N]` | run the flow; print what was cut from the dossier (file and chunk numbers), the restored answer, the verification line (`signature OK, signer 0x...`), the attestation level and the receipt directory. `--dry-run` prints the exact request JSON and `leak check passed`, makes no network call and needs no key. Without `--dry-run` the key comes from `NEARAI_API_KEY`; missing key -> exit 2 with a clear message. |
+| `ask QUESTION --folder F --entities E [--model M] [--k N] [--receipts DIR] [--dry-run] [--allow-incognito] [--base-url URL] [--max-tokens N]` | run the flow; print what was cut from the dossier (file and chunk numbers), the restored answer, the verification line (`signature OK, signer 0x...`), the attestation level and the receipt directory. `--dry-run` prints the messages of the request as readable text (system, then user), the SHA-256 of the exact JSON request and `leak check passed`, makes no network call and needs no key. Without `--dry-run` the key comes from `NEARAI_API_KEY`; missing key -> exit 2 with a clear message. |
 | `verify PATH` | offline `verify_receipt`; print each check as `OK`/`FAIL` and the signer; exit 0 only if all pass |
 | `chain DIR` | offline `verify_chain` |
 | `models [--base-url URL]` | list models with tier and prices, confidential first |

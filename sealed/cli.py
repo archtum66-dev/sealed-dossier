@@ -17,7 +17,7 @@ from sealed.pipeline import (
     ask,
 )
 from sealed.receipt import verify_chain, verify_receipt
-from sealed.verify import parse_signed_text
+from sealed.verify import sha256_text
 
 _TIER_ORDER = {"confidential": 0, "attested_3p": 1, "incognito": 2, "unknown": 3}
 
@@ -33,30 +33,20 @@ def _cmd_index(args: argparse.Namespace) -> int:
     return 0
 
 
+def _format_counts(counts: dict[str, int]) -> str:
+    if not counts:
+        return "nothing replaced"
+    return ", ".join(f"{kind}={n}" for kind, n in sorted(counts.items()))
+
+
 def _cmd_ask(args: argparse.Namespace) -> int:
-    if args.dry_run:
-        result = ask(
-            args.question,
-            args.folder,
-            args.entities,
-            model=args.model,
-            k=args.k,
-            receipts_dir=args.receipts,
-            db_path=args.db,
-            dry_run=True,
-            max_tokens=args.max_tokens,
-            rebuild=True,
-        )
-        print(result["request_body"])
-        print("leak check passed", file=sys.stderr)
-        for src in result["sources"]:
-            print(f"{src['file']} chunk {src['chunk']}", file=sys.stderr)
-        return 0
-    api_key = os.environ.get("NEARAI_API_KEY")
-    if not api_key:
-        _print_error("NEARAI_API_KEY is not set")
-        return 2
-    api = NearAI(api_key, base_url=args.base_url)
+    api = None
+    if not args.dry_run:
+        api_key = os.environ.get("NEARAI_API_KEY")
+        if not api_key:
+            _print_error("NEARAI_API_KEY is not set")
+            return 2
+        api = NearAI(api_key, base_url=args.base_url)
     try:
         result = ask(
             args.question,
@@ -67,14 +57,12 @@ def _cmd_ask(args: argparse.Namespace) -> int:
             receipts_dir=args.receipts,
             db_path=args.db,
             api=api,
+            dry_run=args.dry_run,
             allow_incognito=args.allow_incognito,
             max_tokens=args.max_tokens,
             rebuild=True,
         )
-    except LeakError as exc:
-        _print_error(str(exc))
-        return 3
-    except PolicyError as exc:
+    except (LeakError, PolicyError) as exc:
         _print_error(str(exc))
         return 3
     except VerificationError as exc:
@@ -83,16 +71,27 @@ def _cmd_ask(args: argparse.Namespace) -> int:
     except ApiError as exc:
         _print_error(str(exc))
         return 4
-    except (ValueError, FileNotFoundError) as exc:
+    except (ValueError, OSError) as exc:
         _print_error(str(exc))
         return 2
     for src in result["sources"]:
-        print(f"{src['file']} chunk {src['chunk']}", file=sys.stderr)
+        print(f"source: {src['file']} chunk {src['chunk']}", file=sys.stderr)
+    print(f"replaced: {_format_counts(result['replaced'])}", file=sys.stderr)
+    if args.dry_run:
+        # Show the request as readable text; the bytes that would be sent are this
+        # same content JSON-encoded, and their hash is printed so it can be compared later.
+        body = json.loads(result["request_body"])
+        for message in body["messages"]:
+            print(f"--- {message['role']} ---")
+            print(message["content"])
+        print(f"request sha256: {sha256_text(result['request_body'])}", file=sys.stderr)
+        print("leak check passed", file=sys.stderr)
+        return 0
     print(result["answer"])
     signer = result["verification"].get("signer", "")
     print(f"signature OK, signer {signer}", file=sys.stderr)
     print(f"attestation: {result['attestation_level']}", file=sys.stderr)
-    print(result["receipt_dir"], file=sys.stderr)
+    print(f"receipt: {result['receipt_dir']}", file=sys.stderr)
     return 0
 
 
@@ -135,29 +134,53 @@ def _cmd_models(args: argparse.Namespace) -> int:
     return 0
 
 
+def _demo_receipt_dirs(fixture: Path) -> list[Path]:
+    if (fixture / "receipt.json").is_file():
+        return [fixture]
+    return sorted(
+        child
+        for child in fixture.iterdir()
+        if child.is_dir() and (child / "receipt.json").is_file()
+    )
+
+
 def _cmd_demo(args: argparse.Namespace) -> int:
+    """Replay a stored run offline: no network, no key. Everything shown is re-checked."""
     fixture = Path(args.fixture)
     if not fixture.is_dir():
-        _print_error(f"fixture folder not found: {fixture}")
+        _print_error(
+            f"fixture folder not found: {fixture} (record a run with: python examples/run_live.py)"
+        )
         return 2
-    request_path = fixture / "request.json"
-    signature_path = fixture / "signature.json"
-    answer_path = fixture / "answer.md"
-    if not request_path.is_file() or not signature_path.is_file():
-        _print_error("fixture missing request.json or signature.json")
+    receipt_dirs = _demo_receipt_dirs(fixture)
+    if not receipt_dirs:
+        _print_error(f"no receipts in {fixture}")
         return 2
-    request_body = request_path.read_text(encoding="utf-8")
-    print(request_body)
-    signature_payload = json.loads(signature_path.read_text(encoding="utf-8"))
-    req_h, resp_h = parse_signed_text(signature_payload["text"])
-    print(f"request hash: {req_h}")
-    print(f"response hash: {resp_h}")
-    result = verify_receipt(fixture)
-    for name, ok in sorted(result["checks"].items()):
-        print(f"{name}: {'OK' if ok else 'FAIL'}")
-    if answer_path.is_file():
-        print(answer_path.read_text(encoding="utf-8").rstrip())
-    return 0 if result["ok"] else 5
+    all_ok = True
+    for rdir in receipt_dirs:
+        receipt = json.loads((rdir / "receipt.json").read_text(encoding="utf-8"))
+        request = json.loads((rdir / "request.json").read_bytes().decode("utf-8"))
+        print(f"===== {rdir.name}: model {receipt['model']} ({receipt['model_tier']}) =====")
+        print("What left the machine (names already replaced):")
+        print(request["messages"][-1]["content"])
+        print()
+        result = verify_receipt(rdir)
+        all_ok = all_ok and result["ok"]
+        for name, ok in sorted(result["checks"].items()):
+            print(f"  {name}: {'OK' if ok else 'FAIL'}")
+        print(f"  signer: {result['signer']}")
+        print(f"  attestation level: {receipt['attestation_level']}")
+        answer_path = rdir / "answer.md"
+        if answer_path.is_file():
+            print()
+            print("Answer (names restored on this machine):")
+            print(answer_path.read_bytes().decode("utf-8").rstrip())
+        print()
+    if len(receipt_dirs) > 1 or fixture != receipt_dirs[0]:
+        chain = verify_chain(fixture)
+        print(f"chain: {'OK' if chain['ok'] else 'FAIL'} ({chain['count']} receipts)")
+        all_ok = all_ok and chain["ok"]
+    return 0 if all_ok else 5
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -199,6 +222,10 @@ def main(argv: list[str] | None = None) -> int:
     p_demo.add_argument("--fixture", default="fixtures/run1")
     p_demo.set_defaults(func=_cmd_demo)
 
+    for stream in (sys.stdout, sys.stderr):
+        # Dossiers contain umlauts; never crash on a console with a legacy code page.
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     args = parser.parse_args(argv)
     if getattr(args, "func", None) is None:
         parser.print_help()

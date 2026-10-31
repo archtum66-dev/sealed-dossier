@@ -90,8 +90,9 @@ def save_receipt(
         json.dumps(receipt_core, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    (dest / "request.json").write_text(chat_result.request_body, encoding="utf-8")
-    (dest / "response.txt").write_text(chat_result.response_text, encoding="utf-8")
+    # Exact bytes: the hashes cover these texts, so no newline translation on any platform.
+    (dest / "request.json").write_bytes(chat_result.request_body.encode("utf-8"))
+    (dest / "response.txt").write_bytes(chat_result.response_text.encode("utf-8"))
     (dest / "signature.json").write_text(
         json.dumps(signature_payload, indent=2) + "\n",
         encoding="utf-8",
@@ -122,8 +123,8 @@ def verify_receipt(path: str | Path) -> dict:
         rdir = _load_receipt_dir(Path(path))
         receipt_path = rdir / "receipt.json"
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-        request_body = (rdir / "request.json").read_text(encoding="utf-8")
-        response_text = (rdir / "response.txt").read_text(encoding="utf-8")
+        request_body = (rdir / "request.json").read_bytes().decode("utf-8")
+        response_text = (rdir / "response.txt").read_bytes().decode("utf-8")
         signature_payload = json.loads(
             (rdir / "signature.json").read_text(encoding="utf-8")
         )
@@ -139,7 +140,9 @@ def verify_receipt(path: str | Path) -> dict:
         verification = verify_signature(request_body, response_text, signature_payload)
         signer = verification.get("signer", "")
         checks["signature"] = bool(verification.get("ok"))
-        checks["chat_id"] = receipt.get("chat_id") == signature_payload.get("chat_id")
+        # The chat id is part of the signed response body itself; the signature payload
+        # from the API is not required to repeat it.
+        checks["chat_id"] = receipt.get("chat_id") == json.loads(response_text).get("id")
         checks["signing_address"] = (
             str(receipt.get("signing_address", "")).lower()
             == str(signature_payload.get("signing_address", "")).lower()

@@ -106,7 +106,6 @@ class Pseudonymizer:
         self._next_num: dict[str, int] = {}
         self._original_to_placeholder: dict[str, str] = {}
         self._placeholder_to_canonical: dict[str, str] = {}
-        self._counts: dict[str, int] = {}
         self._rules: list[tuple[re.Pattern[str], str, str]] = []
         for kind, items in entities.items():
             prefix = _KIND_TO_PREFIX[kind]
@@ -142,16 +141,18 @@ class Pseudonymizer:
         ph = f"[{prefix}_{num}]"
         self._original_to_placeholder[key] = ph
         self._placeholder_to_canonical[ph] = canonical
-        self._counts[kind] = self._counts.get(kind, 0) + 1
         return ph
 
     def _builtin_placeholder(self, kind: str, matched: str) -> str:
+        key = f"{kind}:" + re.sub(r"[\s.]", "", matched).casefold()
+        if key in self._original_to_placeholder:
+            return self._original_to_placeholder[key]
         ck = self._counter_key(kind)
         num = self._next_num.get(ck, 0) + 1
         self._next_num[ck] = num
         ph = f"[{kind}_{num}]"
+        self._original_to_placeholder[key] = ph
         self._placeholder_to_canonical[ph] = matched
-        self._counts[kind] = self._counts.get(kind, 0) + 1
         return ph
 
     def _apply_entities(self, text: str) -> str:
@@ -174,10 +175,13 @@ class Pseudonymizer:
                 continue
             chosen.append((start, end, kind, canonical, matched))
             occupied.append((start, end))
-        chosen.sort(key=lambda t: t[0], reverse=True)
+        chosen.sort(key=lambda t: t[0])
+        replacements = [
+            (start, end, self._placeholder_for(kind, canonical))
+            for start, end, kind, canonical, _matched in chosen
+        ]
         out = text
-        for start, end, kind, canonical, _matched in chosen:
-            ph = self._placeholder_for(kind, canonical)
+        for start, end, ph in reversed(replacements):
             out = out[:start] + ph + out[end:]
         return out
 
@@ -191,8 +195,10 @@ class Pseudonymizer:
         return out
 
     def apply(self, text: str) -> str:
-        out = self._apply_entities(text)
-        return self._apply_builtins(out)
+        # Built-in patterns run first: an e-mail address such as corinne.wyss@firma.example
+        # must be replaced as a whole, not after its name parts were cut out of it.
+        out = self._apply_builtins(text)
+        return self._apply_entities(out)
 
     def restore(self, text: str) -> str:
         out = text
@@ -218,7 +224,12 @@ class Pseudonymizer:
 
     @property
     def counts(self) -> dict[str, int]:
-        return dict(self._counts)
+        """Number of distinct placeholders per kind (``person``, ``ahv``, ...)."""
+        out: dict[str, int] = {}
+        for ph in self._placeholder_to_canonical:
+            kind = ph[1 : ph.rindex("_")].lower()
+            out[kind] = out.get(kind, 0) + 1
+        return out
 
     def mapping(self) -> dict[str, str]:
         return dict(self._placeholder_to_canonical)

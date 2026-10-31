@@ -117,3 +117,27 @@ def test_mapping_and_counts(entities):
     assert p.counts["person"] == 1
     assert p.counts["org"] == 1
     assert p.mapping()["[PERSON_1]"] == "Hans Muster"
+
+
+def test_email_containing_a_listed_name_is_replaced_as_a_whole():
+    p = Pseudonymizer({"person": [["Corinne Wyss", "Wyss"]]})
+    out = p.apply("Write to corinne.wyss@firma-beispiel.example or call Wyss.")
+    assert "corinne" not in out.lower()
+    assert "firma" not in out
+    assert "[EMAIL_1]" in out
+    assert "[PERSON_1]" in out
+    assert p.leaks(out) == []
+
+
+def test_same_builtin_value_gets_the_same_placeholder():
+    p = Pseudonymizer({})
+    out = p.apply("IBAN CH93 0076 2011 6238 5295 7 and again CH9300762011623852957")
+    assert out.count("[IBAN_1]") == 2
+    assert "[IBAN_2]" not in out
+    assert p.counts == {"iban": 1}
+
+
+def test_placeholders_are_numbered_by_first_appearance():
+    p = Pseudonymizer({"person": ["Anna Beispiel", "Bruno Beispiel"]})
+    out = p.apply("Bruno Beispiel schreibt an Anna Beispiel. Bruno Beispiel wartet.")
+    assert out == "[PERSON_1] schreibt an [PERSON_2]. [PERSON_1] wartet."

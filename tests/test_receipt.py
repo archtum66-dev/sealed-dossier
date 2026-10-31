@@ -96,3 +96,50 @@ def test_tamper_request_fails(tmp_path):
     )
     (path / "request.json").write_text("tampered", encoding="utf-8")
     assert verify_receipt(path)["ok"] is False
+
+
+def test_receipt_verifies_when_signature_payload_has_no_chat_id(tmp_path):
+    chat = _sample_chat()
+    sig = _signature(chat)
+    del sig["chat_id"]
+    verification = verify_signature(chat.request_body, chat.response_text, sig)
+    path = save_receipt(
+        tmp_path / "receipts",
+        model="m",
+        model_tier="confidential",
+        chat_result=chat,
+        signature_payload=sig,
+        verification=verification,
+        attestation_report=None,
+        attestation_level="not_checked",
+        replaced={},
+        sources=[],
+        answer="ok",
+        excerpts="",
+    )
+    assert verify_receipt(path)["ok"] is True
+
+
+def test_response_with_newlines_survives_save_and_verify(tmp_path):
+    req = json.dumps({"model": "m", "messages": []})
+    resp = '{"id": "c9",\r\n "choices": [{"message": {"content": "a\\nb"}}]}\n'
+    chat = ChatResult("c9", "m", req, resp, "a\nb")
+    sig = _signature(chat)
+    verification = verify_signature(chat.request_body, chat.response_text, sig)
+    assert verification["ok"] is True
+    path = save_receipt(
+        tmp_path / "receipts",
+        model="m",
+        model_tier="confidential",
+        chat_result=chat,
+        signature_payload=sig,
+        verification=verification,
+        attestation_report=None,
+        attestation_level="not_checked",
+        replaced={},
+        sources=[],
+        answer="a\nb",
+        excerpts="",
+    )
+    assert (path / "response.txt").read_bytes() == resp.encode("utf-8")
+    assert verify_receipt(path)["ok"] is True
