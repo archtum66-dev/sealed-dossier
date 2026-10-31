@@ -6,7 +6,10 @@ NEARAI_API_KEY; if it is not set, you are asked for it. Paste works (right click
 input is visible while you paste, then the screen is cleared. The key is kept in memory only.
 Three questions cost a few US cents. The receipts of the run are the replay used by `sealed demo`.
 
-    python examples/run_live.py [--model MODEL] [--out fixtures/run1] [--base-url URL]
+    python examples/run_live.py [--model MODEL] [--out fixtures/run1] [--base-url URL] [--resume]
+
+--resume continues a run that stopped early: the receipts already there are checked and kept, and
+only the missing questions are asked.
 """
 
 from __future__ import annotations
@@ -37,7 +40,7 @@ def _ask_key() -> str:
 QUESTIONS = [
     "Welche Mängel wurden gemeldet, wann, und wie hat die Vermieterin reagiert?",
     "Welche Fristen und Termine nennen die Mängelrüge, die Antwort der Vermieterin, der Augenschein und das Schlichtungsgesuch, und was ist noch offen?",
-    "Begründe in drei Sätzen die Herabsetzung des Mietzinses wegen des Schimmels, nur gestützt auf das Dossier.",
+    "Welche Befunde aus dem Augenschein sprechen für eine Herabsetzung des Mietzinses? Nenne höchstens drei Punkte mit Quelle.",
 ]
 
 
@@ -46,12 +49,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--out", default=str(ROOT / "fixtures" / "run1"))
     parser.add_argument("--base-url")
+    parser.add_argument("--resume", action="store_true", help="continue a run that stopped early")
     args = parser.parse_args(argv)
 
     out = Path(args.out)
+    start = 0
     if out.exists() and any(out.iterdir()):
-        print(f"{out} already holds a run; move it away first.", file=sys.stderr)
-        return 2
+        if not args.resume:
+            print(f"{out} already holds a run; move it away first, or use --resume.", file=sys.stderr)
+            return 2
+        existing = verify_chain(out)
+        if not existing["ok"]:
+            print(f"the receipts in {out} do not verify: {existing['problems']}", file=sys.stderr)
+            return 5
+        start = existing["count"]
+        if start >= len(QUESTIONS):
+            print(f"{out} already holds all {len(QUESTIONS)} receipts; nothing to resume.", file=sys.stderr)
+            return 2
+        print(f"resuming after {start} verified receipt(s)", flush=True)
     key = (os.environ.get("NEARAI_API_KEY") or "").strip() or _ask_key()
     if not key:
         print("no API key given", file=sys.stderr)
@@ -59,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     api = NearAI(key, base_url=args.base_url)
     work = Path(tempfile.mkdtemp(prefix="sealed-live-"))
     try:
-        for number, question in enumerate(QUESTIONS, start=1):
+        for number, question in enumerate(QUESTIONS[start:], start=start + 1):
             print(f"[{number}/{len(QUESTIONS)}] {question}", flush=True)
             result = ask(
                 question,
@@ -70,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
                 db_path=work / "index.db",
                 api=api,
                 k=6,
+                max_tokens=12000,
             )
             print(f"    signature OK, attestation level: {result['attestation_level']}", flush=True)
     except (LeakError, PolicyError, VerificationError, ApiError, ValueError, OSError) as exc:
