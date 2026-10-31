@@ -28,7 +28,7 @@ The excerpts you send show what your question is about. The TEE protects them fr
 **4. The meaning of the attestation.**
 `sealed` checks that the signature matches the signing address and that the hashes match. It also checks, **structurally**, whether a returned attestation report names that address.
 It does **not** verify the Intel TDX quote or the NVIDIA GPU evidence itself, and it does not check the nonce binding.
-The receipt says so: the level is `report_lists_signer`, never "verified". To get the full check, run NEAR AI's official verifier (`nearai/nearai-cloud-verifier`) on the stored `attestation.json`.
+The receipt says so: the level is `report_lists_signer`, never "verified". The full check is NEAR AI's official verifier (`nearai/nearai-cloud-verifier`); it fetches a fresh report and does not check a stored one. Its result for the signer of the recorded run (31 Oct 2026) is in `docs/ATTESTATION_CHECK.md`. It shows the signing key is bound to an Intel TDX enclave and an NVIDIA GPU attestation at the time of the check, not at the second of each run.
 Also: trust in a TEE is trust in the **hardware vendors** and in the **published measurements**. It is not trust in nothing.
 
 **5. Incognito models.**

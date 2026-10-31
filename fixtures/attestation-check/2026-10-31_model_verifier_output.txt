@@ -1,0 +1,149 @@
+# Output of NEAR AI's official verifier (py/model_verifier.py), 31 Oct 2026, 10:25 UTC
+# Command: python py/model_verifier.py --model Qwen/Qwen3.8-27B   (no API key)
+# Verifier: github.com/nearai/nearai-cloud-verifier, commit 94554726fd548676842b7ea603a8173a60c31341 (2026-08-10), MIT
+# Python 3.13.18; dcap-qvl 0.7.0, eth-account 0.14.0, requests 2.34.2, cryptography 50.0.2, PyNaCl 1.6.2
+# Shortened only where marked: the compose manifest bodies are cut. Everything else is unchanged.
+
+========================================
+🔐 Gateway attestation
+========================================
+
+🔐 Attestation
+Request nonce: 0c3fdbcf997cefa6a6b594244161d1d78e624cb3e027f9d1d1c7faac517d41b7
+
+Signing address: 0xb98a789cdc4817275f5155593ba73ef2a957e779
+
+🔐 Intel TDX quote
+TDX quote verification result: {
+  "status": "UpToDate",
+  "advisory_ids": [],
+  "report": {
+    "TD10": {
+      "tee_tcb_svn": "09030800000000000000000000000000",
+      "mr_seam": "2d2de102461684f14c8d0984a09d895e3e9e15944ce020a03b977e1f114d5e1ed32ef666a47fd19a5851b3800eda3afa",
+      "mr_signer_seam": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "seam_attributes": "0000000000000000",
+      "td_attributes": "0000001000000000",
+      "xfam": "e702060000000000",
+      "mr_td": "7fe60787222bd394cb516abca2435f22f035ab2cc9c0a4b4b3b148e46297f3d931a237b72f359052c6e657d8c1409173",
+      "mr_config_id": "01f571e5dafe8f96baf116a271b4be9cba228b447dd6ebe502bbda81ede7bcc7ce000000000000000000000000000000",
+      "mr_owner": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "mr_owner_config": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "rt_mr0": "d090162bff4b1d1dc74dc59dc548838efc4b811b173da8536efa8e2a9c045da70ee092301293ad90afebee448bcd0211",
+      "rt_mr1": "4ae609807c765916a31d724786ed74bcb97e168a9d937b04936aeef2015c907eba5ac352c6bcd749c246fd62ffb659ec",
+      "rt_mr2": "764489f277a8540189761e72b4238ba36d4d647e11bd958d8ab5522af2a4867b0ff63e06b0c4967f1857236244040a5d",
+      "rt_mr3": "0ed34c8748e4a346deb0bca75855252f5f7b141fa3d3be68553e687b348f95f090a9f264fae51201eb40fe1121e459c1",
+      "report_data": "b98a789cdc4817275f5155593ba73ef2a957e7790000000000000000000000000c3fdbcf997cefa6a6b594244161d1d78e624cb3e027f9d1d1c7faac517d41b7"
+    }
+  },
+  "ppid": "8842b080fea8308f8f45531fd81f45b9",
+  "qe_status": {
+    "status": "UpToDate",
+    "advisory_ids": []
+  },
+  "platform_status": {
+    "status": "UpToDate",
+    "advisory_ids": []
+  }
+}
+Verification successful! Status: UpToDate
+Advisory IDs: []
+Intel TDX quote verified: True
+
+🔐 TDX report data
+Signing algorithm: ecdsa
+Report data binds signing address: True
+Report data embeds request nonce: True
+
+Docker compose manifest attested by the enclave:
+  [779 lines of the public docker-compose manifest omitted here; the verifier prints them in full]
+Compose sha256: f571e5dafe8f96baf116a271b4be9cba228b447dd6ebe502bbda81ede7bcc7ce
+mr_config (from verified quote): 01f571e5dafe8f96baf116a271b4be9cba228b447dd6ebe502bbda81ede7bcc7ce000000000000000000000000000000
+mr_config matches compose hash: True
+
+🔐 Sigstore provenance
+Checking Sigstore accessibility for container images...
+  ✓ https://search.sigstore.dev/?hash=sha256:85ac41c2db88d0df9bd6145e608a3cb023f5d8443868adbfbbf66efb51087917 (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:dd570dee92901c6d9cf96909404bb5177294437e3642541225a85b06cefa3d9d (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:45f859504c7a66ea562e3230b7a3b482912bdd93f3930d1bb1c2f46e8d84f8f0 (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412 (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:d38e6d816454de5c93690ef46f8297fd5e57c6b8c4b5dfe984b7e1229aa6b790 (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:1653c23200298a823c08c66d829c633fc36919bca1e09cf577b83b01353e0891 (HTTP 200)
+
+⚠️  No compose_manager_attestation in report; skipping actions hash check
+
+
+
+========================================
+🔐 Model attestations: (#1)
+========================================
+
+🔐 Attestation
+Request nonce: 0c3fdbcf997cefa6a6b594244161d1d78e624cb3e027f9d1d1c7faac517d41b7
+
+Signing address: 0x835ab53d20294ef795906dff21ae4c045336aa26
+
+🔐 Intel TDX quote
+TDX quote verification result: {
+  "status": "UpToDate",
+  "advisory_ids": [],
+  "report": {
+    "TD10": {
+      "tee_tcb_svn": "0d010400000000000000000000000000",
+      "mr_seam": "489e585f1c54bc5a02066c8c6ec21619ff0334ec6f21e07e2a35202c59183789c8057e7d97dd591bb08314b185819e72",
+      "mr_signer_seam": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "seam_attributes": "0000000000000000",
+      "td_attributes": "0000001000000000",
+      "xfam": "e702060000000000",
+      "mr_td": "df4d77c857de652bd0fafa343a2026b51071ee03773d076d283abf1a7d36ff91ffa279ee4a617ac664f7e2a2c8d5891b",
+      "mr_config_id": "015e513dbd72e1c0f291f748ad06d4dbc1df55659869e649376213ac7b3c9d2e29000000000000000000000000000000",
+      "mr_owner": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "mr_owner_config": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "rt_mr0": "bc122d143ab768565ba5c3774ff5f03a63c89a4df7c1f5ea38d3bd173409d14f8cbdcc36d40e703cccb996a9d9687590",
+      "rt_mr1": "4ae609807c765916a31d724786ed74bcb97e168a9d937b04936aeef2015c907eba5ac352c6bcd749c246fd62ffb659ec",
+      "rt_mr2": "bd67ab7554dc27ab03a077bc1447a1a67d0624ff547c4c809a8626f12d6a89712f8ec60e781e99b98208574065d21a71",
+      "rt_mr3": "b0dfe1564e8dca48c258345daa65c290078a568e65062c8ccb82fab9df34841e151801ef80c7661a95a1791d50aa832c",
+      "report_data": "835ab53d20294ef795906dff21ae4c045336aa260000000000000000000000000c3fdbcf997cefa6a6b594244161d1d78e624cb3e027f9d1d1c7faac517d41b7"
+    }
+  },
+  "ppid": "a6f0afdf34bf1e35c1d81e6a33471dec",
+  "qe_status": {
+    "status": "UpToDate",
+    "advisory_ids": []
+  },
+  "platform_status": {
+    "status": "UpToDate",
+    "advisory_ids": []
+  }
+}
+Verification successful! Status: UpToDate
+Advisory IDs: []
+Intel TDX quote verified: True
+
+🔐 TDX report data
+Signing algorithm: ecdsa
+Report data binds signing address: True
+Report data embeds request nonce: True
+
+🔐 GPU attestation
+GPU payload nonce matches request_nonce: True
+NVIDIA attestation verdict: True
+
+Docker compose manifest attested by the enclave:
+  [375 lines of the public docker-compose manifest omitted here; the verifier prints them in full]
+Compose sha256: 5e513dbd72e1c0f291f748ad06d4dbc1df55659869e649376213ac7b3c9d2e29
+mr_config (from verified quote): 015e513dbd72e1c0f291f748ad06d4dbc1df55659869e649376213ac7b3c9d2e29000000000000000000000000000000
+mr_config matches compose hash: True
+
+🔐 Sigstore provenance
+Checking Sigstore accessibility for container images...
+  ✓ https://search.sigstore.dev/?hash=sha256:85ac41c2db88d0df9bd6145e608a3cb023f5d8443868adbfbbf66efb51087917 (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:742dbd2e61c8709b930712c38958386c3cb3928e09eeb1f1e490600c127e2edb (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:6e035c8fb99c1d31f41760d25af178683a658cca4afd73cd0d366fbb5bf884be (HTTP 200)
+  ✓ https://search.sigstore.dev/?hash=sha256:079a14b41deb11e0e27f9b69648e8b3d89bd6fb9ccf6071643b8f447fa415085 (HTTP 200)
+
+🔐 Compose-manager actions hash
+  actions_hash matches SHA-256(canonicalize(actions)): True
+  actions_hash matches compose-manager report_data[:32] (unverified quote): True
+
+⚠️  No compose_manager_attestation in report; skipping actions hash check

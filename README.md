@@ -37,13 +37,14 @@ answer  +  receipt (hash chain, verifiable offline)
 | 4 | `python -m sealed verify fixtures/run1/0001` | Recomputes both hashes, recovers the signer from the signature, checks the receipt hash. |
 
 Python 3.10 or newer. Nothing to install: run the commands from the repository root.
+Full attestation (Intel TDX, NVIDIA GPU): recorded in [`docs/ATTESTATION_CHECK.md`](docs/ATTESTATION_CHECK.md); repeat it with NEAR AI's official verifier, no key needed.
 The sample case in `examples/` is **invented**.
 
 ## Status, stated plainly
 
 - **Done and tested offline:** search, pseudonymiser with leak check, API client, signature verification, receipts with hash chain, CLI, replay.
 - **Recorded live run on NEAR AI Cloud (31 Oct 2026):** `fixtures/run1/`, three questions on the invented sample case, model `Qwen/Qwen3.8-27B` in the **confidential** tier. All three signatures verify, the receipt chain is intact, and no listed name, AHV number, IBAN, e-mail or phone number was in any request. Cost of these three calls: about one US cent (3,875 input and 7,685 output tokens at USD 0.04 and 1.35 per million tokens). Attestation level of every receipt: `report_lists_signer`. **How it was recorded, honestly:** the first live run used a limit of 2,000 tokens; the model spends most of them on reasoning, so two answers came back cut off or empty. We raised the limit and improved the search, ran again, and answers 1 and 2 were good. Answer 3 (a request to draft legal reasoning) again ended empty after 6,000 reasoning tokens, so it was replaced by a simpler extraction question and asked with `--resume`. The two discarded attempts are not part of the chain; the receipts in `fixtures/run1/` are the ones listed here, unchanged.
-- **Attestation:** the tool fetches the attestation report with a fresh random nonce and checks that the signer of the answer is listed in it. It does **not** verify the Intel TDX quote or the NVIDIA GPU evidence. The receipt therefore says `report_lists_signer`, never "verified". For the full check use NEAR AI's official verifier (`nearai/nearai-cloud-verifier`) on the stored `attestation.json`.
+- **Attestation:** the tool fetches the attestation report with a fresh random nonce and checks that the signer of the answer is listed in it. It does **not** itself verify the Intel TDX quote or the NVIDIA GPU evidence, so each receipt says `report_lists_signer`, never "verified". The full check is done with NEAR AI's official verifier (`nearai/nearai-cloud-verifier`), which asks for a fresh report and does not check a stored one. On 31 Oct 2026 it verified the Intel TDX quote (`UpToDate`), that the report data binds the signing address and our fresh nonce, the NVIDIA GPU verdict and the compose hash, and the attested signing address `0x835a…aa26` is the signer of all three recorded receipts. Output, limits and the commands to repeat it: [`docs/ATTESTATION_CHECK.md`](docs/ATTESTATION_CHECK.md).
 - **Limits** of the pseudonymiser, of the TEE and of the whole approach: [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 
 ## Use it on your own dossier
@@ -90,7 +91,7 @@ fixtures/      model list snapshot (30 Oct 2026), run1/ (recorded live run)
 - **Runtime:** Python standard library only (`urllib`, `sqlite3` with FTS5, `hashlib`, `json`, `re`). The cryptography (Keccak-256, secp256k1 recovery) is plain Python in `sealed/`, checked against `eth-account` vectors.
 - **Development:** `pytest`.
 - **Service:** NEAR AI Cloud (OpenAI-compatible chat API, signature and attestation endpoints). Default model `Qwen/Qwen3.8-27B` (confidential tier in the model list of 30 Oct 2026).
-- Reference for the verification format: `nearai/nearai-cloud-verifier` (MIT), used as documentation, not as code.
+- Reference for the verification format: `nearai/nearai-cloud-verifier` (MIT), used as documentation, not as code. Its output for our model is stored in `fixtures/attestation-check/`.
 
 ## AI assistance
 
