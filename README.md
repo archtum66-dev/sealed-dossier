@@ -49,7 +49,7 @@ The sample case in `examples/` is **invented**.
 ## Use it on your own dossier
 
 ```
-export NEARAI_API_KEY=...          # from https://cloud.near.ai ; never put it in a file
+export NEARAI_API_KEY=...          # from https://cloud.near.ai ; never put it in the repository
 python -m sealed models            # models and tiers, confidential first
 python -m sealed ask "Your question" --folder my-dossier --entities my-entities.json --dry-run
 python -m sealed ask "Your question" --folder my-dossier --entities my-entities.json

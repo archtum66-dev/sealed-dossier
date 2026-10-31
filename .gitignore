@@ -8,3 +8,5 @@ venv/
 .env
 *.log
 _log/
+nearai-key*.txt
+*.key

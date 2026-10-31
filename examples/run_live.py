@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Record a live run of the sample case on NEAR AI Cloud into fixtures/run1/.
 
-Needs an API key from https://cloud.near.ai. The key is read from the environment variable
-NEARAI_API_KEY; if it is not set, you are asked for it. Paste works (right click or Ctrl+V); the
-input is visible while you paste, then the screen is cleared. The key is kept in memory only.
+Needs an API key from https://cloud.near.ai. The key is taken from, in this order:
+1. the environment variable NEARAI_API_KEY,
+2. a key file you created yourself outside the repository: the path in NEARAI_API_KEY_FILE, or
+   nearai-key.txt in your home folder,
+3. a prompt. Paste works (right click or Ctrl+V); the input is visible while you paste, then the
+   screen is cleared.
+This script never writes the key anywhere and never prints it.
 Three questions cost a few US cents. The receipts of the run are the replay used by `sealed demo`.
 
     python examples/run_live.py [--model MODEL] [--out fixtures/run1] [--base-url URL] [--resume]
@@ -27,11 +31,32 @@ from sealed.nearai import DEFAULT_MODEL, ApiError, NearAI  # noqa: E402
 from sealed.pipeline import LeakError, PolicyError, VerificationError, ask  # noqa: E402
 from sealed.receipt import verify_chain  # noqa: E402
 
+def _key_file() -> Path:
+    custom = os.environ.get("NEARAI_API_KEY_FILE")
+    return Path(custom) if custom else Path.home() / "nearai-key.txt"
+
+
+def _read_key() -> str:
+    key = (os.environ.get("NEARAI_API_KEY") or "").strip()
+    if key:
+        return key
+    path = _key_file()
+    if path.is_file():
+        key = path.read_text(encoding="utf-8", errors="replace").strip().strip('"').strip("'")
+        if key:
+            print(f"API key read from {path}", flush=True)
+            return key
+    return _ask_key()
+
+
 def _ask_key() -> str:
     """Ask for the key in plain text: a hidden prompt (getpass) does not accept pasting on Windows."""
     print("NEAR AI Cloud API key: paste it here (right click or Ctrl+V) and press Enter.")
     print("The text is visible while you paste; the screen is cleared right after.")
-    key = input("> ").strip().strip('"').strip("'")
+    try:
+        key = input("> ").strip().strip('"').strip("'")
+    except EOFError:
+        return ""
     if sys.stdout.isatty():
         os.system("cls" if os.name == "nt" else "clear")
     return key
@@ -67,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{out} already holds all {len(QUESTIONS)} receipts; nothing to resume.", file=sys.stderr)
             return 2
         print(f"resuming after {start} verified receipt(s)", flush=True)
-    key = (os.environ.get("NEARAI_API_KEY") or "").strip() or _ask_key()
+    key = _read_key()
     if not key:
         print("no API key given", file=sys.stderr)
         return 2

@@ -2,10 +2,17 @@ import importlib.util
 import shutil
 from pathlib import Path
 
+import pytest
+
 from sealed.receipt import verify_chain
 from tests import mock_nearai
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture(autouse=True)
+def _no_home_key_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("NEARAI_API_KEY_FILE", str(tmp_path / "no-such-key-file.txt"))
 
 
 def _load_script():
@@ -67,3 +74,30 @@ def test_run_live_resume_asks_only_the_missing_question(tmp_path, monkeypatch):
         server.shutdown()
     assert verify_chain(out)["count"] == 3
     assert (out / "0003" / "receipt.json").exists()
+
+
+def test_run_live_reads_the_key_from_a_key_file(tmp_path, monkeypatch, capsys):
+    mock_nearai.reset_mock_state()
+    server, url = mock_nearai.start_mock_server()
+    monkeypatch.delenv("NEARAI_API_KEY", raising=False)
+    key_file = tmp_path / "my-key.txt"
+    key_file.write_text(f'"{mock_nearai.TEST_API_KEY}"\r\n', encoding="utf-8")
+    monkeypatch.setenv("NEARAI_API_KEY_FILE", str(key_file))
+    monkeypatch.setattr("builtins.input", lambda _prompt="": pytest.fail("must not prompt"))
+    try:
+        out = tmp_path / "run1"
+        assert _load_script().main(["--out", str(out), "--base-url", url]) == 0
+    finally:
+        server.shutdown()
+    assert mock_nearai.TEST_API_KEY not in capsys.readouterr().out
+    assert verify_chain(out)["count"] == 3
+
+
+def test_run_live_without_key_and_without_input_stops_cleanly(tmp_path, monkeypatch):
+    monkeypatch.delenv("NEARAI_API_KEY", raising=False)
+
+    def _eof(_prompt=""):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", _eof)
+    assert _load_script().main(["--out", str(tmp_path / "run1")]) == 2
