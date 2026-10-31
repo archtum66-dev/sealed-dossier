@@ -45,7 +45,7 @@ Lawyers in Switzerland are bound by **Art. 321 StGB** and **Art. 13 BGFA**. Usin
 
 ## Secrets
 
-- The API key is read **only** from the environment variable `NEARAI_API_KEY`. It is never printed, never written to a file, never part of a receipt, never part of an error message.
+- The API key is read **only** from the environment variable `NEARAI_API_KEY`, or, in `examples/run_live.py`, typed or pasted into a prompt (kept in memory, screen cleared afterwards). It is never printed, never written to a file, never part of a receipt, never part of an error message.
 - The repository contains **no real data**: the sample case is invented, and the test keys are public sample keys that protect nothing.
 
 ## Out of scope for this version

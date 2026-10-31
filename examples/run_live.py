@@ -2,7 +2,8 @@
 """Record a live run of the sample case on NEAR AI Cloud into fixtures/run1/.
 
 Needs an API key from https://cloud.near.ai. The key is read from the environment variable
-NEARAI_API_KEY; if it is not set, you are asked for it (input hidden). It is kept in memory only.
+NEARAI_API_KEY; if it is not set, you are asked for it. Paste works (right click or Ctrl+V); the
+input is visible while you paste, then the screen is cleared. The key is kept in memory only.
 Three questions cost a few US cents. The receipts of the run are the replay used by `sealed demo`.
 
     python examples/run_live.py [--model MODEL] [--out fixtures/run1] [--base-url URL]
@@ -11,7 +12,6 @@ Three questions cost a few US cents. The receipts of the run are the replay used
 from __future__ import annotations
 
 import argparse
-import getpass
 import os
 import sys
 import tempfile
@@ -23,6 +23,16 @@ sys.path.insert(0, str(ROOT))
 from sealed.nearai import DEFAULT_MODEL, ApiError, NearAI  # noqa: E402
 from sealed.pipeline import LeakError, PolicyError, VerificationError, ask  # noqa: E402
 from sealed.receipt import verify_chain  # noqa: E402
+
+def _ask_key() -> str:
+    """Ask for the key in plain text: a hidden prompt (getpass) does not accept pasting on Windows."""
+    print("NEAR AI Cloud API key: paste it here (right click or Ctrl+V) and press Enter.")
+    print("The text is visible while you paste; the screen is cleared right after.")
+    key = input("> ").strip().strip('"').strip("'")
+    if sys.stdout.isatty():
+        os.system("cls" if os.name == "nt" else "clear")
+    return key
+
 
 QUESTIONS = [
     "Welche Mängel wurden gemeldet, wann, und wie hat die Vermieterin reagiert?",
@@ -42,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     if out.exists() and any(out.iterdir()):
         print(f"{out} already holds a run; move it away first.", file=sys.stderr)
         return 2
-    key = os.environ.get("NEARAI_API_KEY") or getpass.getpass("NEAR AI Cloud API key (hidden): ")
+    key = (os.environ.get("NEARAI_API_KEY") or "").strip() or _ask_key()
     if not key:
         print("no API key given", file=sys.stderr)
         return 2

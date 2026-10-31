@@ -30,3 +30,22 @@ def test_run_live_refuses_to_overwrite_a_run(tmp_path):
     (tmp_path / "run1").mkdir()
     (tmp_path / "run1" / "0001").mkdir()
     assert _load_script().main(["--out", str(tmp_path / "run1")]) == 2
+
+
+def test_run_live_accepts_a_pasted_key_with_stray_spaces(tmp_path, monkeypatch):
+    mock_nearai.reset_mock_state()
+    server, url = mock_nearai.start_mock_server()
+    monkeypatch.delenv("NEARAI_API_KEY", raising=False)
+    monkeypatch.setattr("builtins.input", lambda _prompt="": f'  "{mock_nearai.TEST_API_KEY}"  ')
+    try:
+        out = tmp_path / "run1"
+        assert _load_script().main(["--out", str(out), "--base-url", url]) == 0
+    finally:
+        server.shutdown()
+    assert verify_chain(out)["count"] == 3
+
+
+def test_run_live_stops_when_no_key_is_given(tmp_path, monkeypatch):
+    monkeypatch.delenv("NEARAI_API_KEY", raising=False)
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "   ")
+    assert _load_script().main(["--out", str(tmp_path / "run1")]) == 2
