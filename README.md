@@ -31,7 +31,7 @@ answer  +  receipt (hash chain, verifiable offline)
 
 | # | Command | What you see |
 |---|---|---|
-| 1 | `python -m pytest -q` | **55 tests**, standard library only. They include crypto vectors made with `eth-account` (Keccak-256, EIP-191 signatures, address recovery) and a local mock of the API. |
+| 1 | `python -m pytest -q` | **61 tests**, standard library only. They include crypto vectors made with `eth-account` (Keccak-256, EIP-191 signatures, address recovery) and a local mock of the API. |
 | 2 | `python -m sealed ask "Welche Mängel wurden gemeldet, wann, und wie hat die Vermieterin reagiert?" --folder examples/dossier --entities examples/entities.json --dry-run` | The **exact request** that would leave the machine, with every name replaced, plus the SHA-256 of the request bytes. No network call. |
 | 3 | `python -m sealed demo` | Replay of the recorded run in `fixtures/run1/`: what was sent, the signature check, the restored answer, the receipt chain. All re-checked offline. |
 | 4 | `python -m sealed verify fixtures/run1/0001` | Recomputes both hashes, recovers the signer from the signature, checks the receipt hash. |
@@ -42,7 +42,7 @@ The sample case in `examples/` is **invented**.
 ## Status, stated plainly
 
 - **Done and tested offline:** search, pseudonymiser with leak check, API client, signature verification, receipts with hash chain, CLI, replay.
-- **Recorded live run on NEAR AI Cloud:** not yet in this repository. `python examples/run_live.py` records it (needs an API key; three questions cost well under one US cent at the listed model prices). Until `fixtures/run1/` exists, `sealed demo` says so and exits.
+- **Recorded live run on NEAR AI Cloud (31 Oct 2026):** `fixtures/run1/`, three questions on the invented sample case, model `Qwen/Qwen3.8-27B` in the **confidential** tier. All three signatures verify, the receipt chain is intact, and no listed name, AHV number, IBAN, e-mail or phone number was in any request. Cost of these three calls: about one US cent (3,875 input and 7,685 output tokens at USD 0.04 and 1.35 per million tokens). Attestation level of every receipt: `report_lists_signer`. **How it was recorded, honestly:** the first live run used a limit of 2,000 tokens; the model spends most of them on reasoning, so two answers came back cut off or empty. We raised the limit and improved the search, ran again, and answers 1 and 2 were good. Answer 3 (a request to draft legal reasoning) again ended empty after 6,000 reasoning tokens, so it was replaced by a simpler extraction question and asked with `--resume`. The two discarded attempts are not part of the chain; the receipts in `fixtures/run1/` are the ones listed here, unchanged.
 - **Attestation:** the tool fetches the attestation report with a fresh random nonce and checks that the signer of the answer is listed in it. It does **not** verify the Intel TDX quote or the NVIDIA GPU evidence. The receipt therefore says `report_lists_signer`, never "verified". For the full check use NEAR AI's official verifier (`nearai/nearai-cloud-verifier`) on the stored `attestation.json`.
 - **Limits** of the pseudonymiser, of the TEE and of the whole approach: [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 
@@ -79,7 +79,7 @@ sealed/        keccak.py, secp256k1.py   pure-Python crypto (no dependencies)
                pseudo.py, index.py       pseudonymiser, full-text search
                nearai.py, verify.py      API client, signature and attestation checks
                receipt.py, pipeline.py, cli.py
-tests/         55 offline tests, mock of the NEAR AI API, crypto vectors
+tests/         61 offline tests, mock of the NEAR AI API, crypto vectors
 examples/      invented sample case, run_live.py
 docs/          SPEC.md, NEARAI_API.md, THREAT_MODEL.md
 fixtures/      model list snapshot (30 Oct 2026), run1/ (recorded live run)

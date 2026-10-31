@@ -1,0 +1,48 @@
+{
+  "schema": "sealed-dossier/receipt/1",
+  "created_utc": "2026-10-31T09:37:39Z",
+  "model": "Qwen/Qwen3.8-27B",
+  "model_tier": "confidential",
+  "chat_id": "eba8e362f12343c489dffa1e322927b7",
+  "request_sha256": "4d707b61d88643b396a2285768b544597adbe50e0ae5e580b81db42686aa8f29",
+  "response_sha256": "1ce419dc932fcbf4e1f97a58779e432d94ada9ac13806827b8b034c759962def",
+  "signing_address": "0x835ab53d20294ef795906dff21ae4c045336aa26",
+  "signature_ok": true,
+  "attestation_level": "report_lists_signer",
+  "replaced": {
+    "person": 3,
+    "org": 2,
+    "case": 1,
+    "place": 3,
+    "iban": 1,
+    "email": 1
+  },
+  "sources": [
+    {
+      "file": "02_Maengelruege_2026-03-02.txt",
+      "chunk": 2
+    },
+    {
+      "file": "04_Aktennotiz_Augenschein_2026-04-08.txt",
+      "chunk": 2
+    },
+    {
+      "file": "02_Maengelruege_2026-03-02.txt",
+      "chunk": 1
+    },
+    {
+      "file": "03_Antwort_Vermieterin_2026-03-19.txt",
+      "chunk": 1
+    },
+    {
+      "file": "05_Schlichtungsgesuch_Entwurf.txt",
+      "chunk": 1
+    },
+    {
+      "file": "01_Mietvertrag_Auszug.txt",
+      "chunk": 2
+    }
+  ],
+  "prev_receipt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "receipt_sha256": "8650ac859c0837e50383727c0d4fd1737fbc670440188e3b89afb6b2ee27aa42"
+}
