@@ -107,4 +107,10 @@ The author has one other, independent hackathon project: **Terra matcher**, a no
 
 ## Licence
 
-MIT, see `LICENSE`. Not legal advice; the tool is an aid for analysis and drafting.
+**PolyForm Noncommercial License 1.0.0**, see `LICENSE`. Any noncommercial use is allowed. The author also explicitly permits the organizers and judges of NEAR HACKATHON to read, run, test and evaluate this repository. Commercial use needs a separate licence from the author: open an issue on this repository.
+
+Required Notice: Copyright (c) 2026 Andreas Grobe
+
+Versions up to commit `6b288c1` (7 November 2026) were published under the MIT License; copies obtained under those terms keep them.
+
+Not legal advice; the tool is an aid for analysis and drafting.
