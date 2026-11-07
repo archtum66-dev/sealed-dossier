@@ -29,6 +29,8 @@ answer  +  receipt (hash chain, verifiable offline)
 
 ## For judges: four checks, no key, no network, five minutes
 
+**In the browser, no install:** https://archtum66-dev.github.io/sealed-dossier/ replays the recorded run and re-checks all three receipts inside the page: both SHA-256 hashes, the EIP-191 signature (signer recovered in the page), the receipt hash and the chain. The same page is `web/index.html`; `python web/build.py --check` shows that it is a fresh build of `fixtures/run1/`.
+
 | # | Command | What you see |
 |---|---|---|
 | 1 | `python -m pytest -q` | **61 tests**, standard library only. They include crypto vectors made with `eth-account` (Keccak-256, EIP-191 signatures, address recovery) and a local mock of the API. |
@@ -84,11 +86,13 @@ tests/         61 offline tests, mock of the NEAR AI API, crypto vectors
 examples/      invented sample case, run_live.py
 docs/          SPEC.md, NEARAI_API.md, THREAT_MODEL.md
 fixtures/      model list snapshot (30 Oct 2026), run1/ (recorded live run)
+web/           index.html (browser replay of run1), build.py, index.template.html
 ```
 
 ## Libraries and tools
 
 - **Runtime:** Python standard library only (`urllib`, `sqlite3` with FTS5, `hashlib`, `json`, `re`). The cryptography (Keccak-256, secp256k1 recovery) is plain Python in `sealed/`, checked against `eth-account` vectors.
+- **Browser replay (`web/`):** one self-contained HTML file. Its Keccak-256 and secp256k1 code is a JavaScript port of `sealed/keccak.py` and `sealed/secp256k1.py`; SHA-256 comes from the browser (WebCrypto). No third-party code, no network request.
 - **Development:** `pytest`.
 - **Service:** NEAR AI Cloud (OpenAI-compatible chat API, signature and attestation endpoints). Default model `Qwen/Qwen3.8-27B` (confidential tier in the model list of 30 Oct 2026).
 - Reference for the verification format: `nearai/nearai-cloud-verifier` (MIT), used as documentation, not as code. Its output for our model is stored in `fixtures/attestation-check/`.

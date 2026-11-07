@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sealed Dossier · Recorded run</title>
+<meta name="description" content="Offline replay of a recorded Sealed Dossier run on NEAR AI Cloud: every receipt is re-checked in your browser (hashes, EIP-191 signature, receipt chain).">
+<style>
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --ink: #141a22; --muted: #5a6575; --line: #dde2e9;
+  --accent: #2b4c9a; --accent-soft: #e6ecf8; --ok: #16794f; --ok-soft: #e1f3ea; --bad: #b4232c; --bad-soft: #fbe7e8;
+  --mark: #fff1c7; --mark-ink: #5b4300; --code: #eef1f5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11151b; --surface: #181e26; --ink: #e6eaf0; --muted: #9aa6b6; --line: #2a333f;
+    --accent: #8fb0ff; --accent-soft: #1f2a40; --ok: #5fd39c; --ok-soft: #15301f; --bad: #ff8a90; --bad-soft: #3a1b1d;
+    --mark: #4a3d12; --mark-ink: #ffe7a3; --code: #10151c;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 28px 16px 48px; }
+header h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -0.01em; }
+header p { margin: 4px 0; color: var(--muted); }
+.tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); margin-right: 6px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-top: 18px; }
+.summary { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+.summary .big { font-size: 20px; font-weight: 650; }
+.summary .ok { color: var(--ok); } .summary .bad { color: var(--bad); }
+button { font: inherit; border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); }
+h2 { font-size: 18px; margin: 0 0 6px; }
+.q { font-size: 16px; font-weight: 600; margin: 6px 0 10px; }
+.meta { color: var(--muted); font-size: 13px; }
+.meta code { font-size: 12px; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+pre { background: var(--code); border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; word-break: break-word; font-size: 13px; margin: 8px 0 0; max-height: 360px; overflow: auto; }
+.prose { white-space: pre-wrap; word-break: break-word; margin: 8px 0 0; font-size: 14px; }
+mark { background: var(--mark); color: var(--mark-ink); border-radius: 3px; padding: 0 2px; }
+details { border-top: 1px solid var(--line); padding: 10px 0 2px; margin-top: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+summary .hint { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
+table.checks { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+table.checks td { padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+table.checks td:first-child { width: 28px; text-align: center; font-weight: 700; }
+.pass { color: var(--ok); } .fail { color: var(--bad); } .wait { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); }
+.note a, header a, footer a { color: var(--accent); }
+footer { margin-top: 26px; color: var(--muted); font-size: 13px; }
+footer pre { max-height: none; }
+@media (max-width: 600px) { header h1 { font-size: 22px; } .panel { padding: 14px; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <span class="tag">NEAR AI Cloud</span><span class="tag">Privacy &amp; Private AI</span>
+  <h1>Sealed Dossier · recorded run</h1>
+  <p>Three questions on an <strong>invented</strong> tenancy case, answered by <code>Qwen/Qwen3.8-27B</code> in the confidential tier of NEAR AI Cloud on 31 October 2026. Names were replaced before anything left the machine.</p>
+  <p>Every check below runs <strong>in your browser</strong>: no server, no key, no network request. The page carries the exact bytes of each receipt from <code>fixtures/run1</code>.</p>
+</header>
+
+<section class="panel" aria-live="polite">
+  <div class="summary">
+    <div class="big" id="sum-main">Checking…</div>
+    <div class="meta" id="sum-detail"></div>
+    <div style="margin-left:auto"><button id="rerun" class="ghost" type="button">Run the checks again</button></div>
+  </div>
+  <p class="note" id="sum-note">For each receipt the page recomputes the SHA-256 of the request and of the response, recovers the signer from the EIP-191 signature, recomputes the receipt hash and follows the hash chain. The same checks as <code>python -m sealed verify</code>.</p>
+</section>
+
+<div id="receipts"></div>
+
+<section class="panel">
+  <h2>What this does and does not show</h2>
+  <ul class="note" style="margin:6px 0 0 18px; padding:0">
+    <li><strong>Shows:</strong> the request and the response were not changed after signing, and the signature was made by the key <code id="signer-full">…</code>.</li>
+    <li><strong>Attestation:</strong> each receipt records <code>report_lists_signer</code>: that key was listed in NEAR AI's attestation report fetched with a fresh nonce. The full Intel TDX and NVIDIA GPU check was done separately with NEAR AI's official verifier, for the same key: <a href="https://github.com/archtum66-dev/sealed-dossier/blob/main/docs/ATTESTATION_CHECK.md">docs/ATTESTATION_CHECK.md</a>.</li>
+    <li><strong>Does not show:</strong> that names not on the user's list were hidden. Replacement is rule-based; <code>--dry-run</code> shows the exact request before it is sent.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>Re-check without a browser (Python 3.10+, no install, from the repository root):</p>
+  <pre>python -m sealed demo
+python -m sealed verify fixtures/run1/0001
+python web/build.py --check</pre>
+  <p>Source: <a href="https://github.com/archtum66-dev/sealed-dossier">github.com/archtum66-dev/sealed-dossier</a> · Built at NEAR HACKATHON · Licence: PolyForm Noncommercial 1.0.0 · Not legal advice.</p>
+</footer>
+</main>
+
+<script>
+"use strict";
+const RUN = /*__RUN_DATA__*/null;
+
+/* ---------- bytes ---------- */
+const utf8 = new TextDecoder("utf-8", { fatal: true });
+const enc = new TextEncoder();
+const b64bytes = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const hex = (u8) => Array.from(u8, (b) => b.toString(16).padStart(2, "0")).join("");
+async function sha256hex(u8) {
+  return hex(new Uint8Array(await crypto.subtle.digest("SHA-256", u8)));
+}
+
+/* ---------- Keccak-256 (port of sealed/keccak.py) ---------- */
+const MASK64 = (1n << 64n) - 1n;
+const RC = [
+  0x0000000000000001n, 0x0000000000008082n, 0x800000000000808An, 0x8000000080008000n,
+  0x000000000000808Bn, 0x0000000080000001n, 0x8000000080008081n, 0x8000000000008009n,
+  0x000000000000008An, 0x0000000000000088n, 0x0000000080008009n, 0x000000008000000An,
+  0x000000008000808Bn, 0x800000000000008Bn, 0x8000000000008089n, 0x8000000000008003n,
+  0x8000000000008002n, 0x8000000000000080n, 0x000000000000800An, 0x800000008000000An,
+  0x8000000080008081n, 0x8000000000008080n, 0x0000000080000001n, 0x8000000080008008n,
+];
+const ROT = [[0, 36, 3, 41, 18], [1, 44, 10, 45, 2], [62, 6, 43, 15, 61], [28, 55, 25, 21, 56], [27, 20, 39, 8, 14]];
+function rotl(v, s) {
+  const k = BigInt(s % 64);
+  return ((v << k) | (v >> (64n - k))) & MASK64;
+}
+function permute(a) {
+  for (const rc of RC) {
+    const c = [0, 1, 2, 3, 4].map((x) => a[x] ^ a[x + 5] ^ a[x + 10] ^ a[x + 15] ^ a[x + 20]);
+    const d = [0, 1, 2, 3, 4].map((x) => c[(x + 4) % 5] ^ rotl(c[(x + 1) % 5], 1));
+    const b = new Array(25).fill(0n);
+    for (let x = 0; x < 5; x++) for (let y = 0; y < 5; y++) b[y + 5 * ((2 * x + 3 * y) % 5)] = rotl(a[x + 5 * y] ^ d[x], ROT[x][y]);
+    for (let x = 0; x < 5; x++) for (let y = 0; y < 5; y++) a[x + 5 * y] = b[x + 5 * y] ^ ((~b[((x + 1) % 5) + 5 * y] & MASK64) & b[((x + 2) % 5) + 5 * y]);
+    a[0] ^= rc;
+  }
+}
+function keccak256(data) {
+  const RATE = 136;
+  let len = data.length + 1;
+  while (len % RATE) len++;
+  const p = new Uint8Array(len);
+  p.set(data);
+  p[data.length] = 0x01;
+  p[len - 1] |= 0x80;
+  const st = new Array(25).fill(0n);
+  for (let off = 0; off < len; off += RATE) {
+    for (let i = 0; i < RATE / 8; i++) {
+      let lane = 0n;
+      for (let j = 7; j >= 0; j--) lane = (lane << 8n) | BigInt(p[off + 8 * i + j]);
+      st[i] ^= lane;
+    }
+    permute(st);
+  }
+  const out = new Uint8Array(32);
+  for (let i = 0; i < 4; i++) {
+    let lane = st[i];
+    for (let j = 0; j < 8; j++) { out[8 * i + j] = Number(lane & 0xffn); lane >>= 8n; }
+  }
+  return out;
+}
+
+/* ---------- secp256k1 address recovery (port of sealed/secp256k1.py) ---------- */
+const P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
+const N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+const G = [0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n, 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n];
+const mod = (a, m) => ((a % m) + m) % m;
+function inv(a, m) {
+  let r0 = m, r1 = mod(a, m), t0 = 0n, t1 = 1n;
+  while (r1 !== 0n) { const q = r0 / r1; [r0, r1] = [r1, r0 - q * r1]; [t0, t1] = [t1, t0 - q * t1]; }
+  if (r0 !== 1n) throw new Error("not invertible");
+  return mod(t0, m);
+}
+function powmod(b, e, m) { let r = 1n; b = mod(b, m); while (e > 0n) { if (e & 1n) r = (r * b) % m; b = (b * b) % m; e >>= 1n; } return r; }
+function padd(p1, p2) {
+  if (!p1) return p2;
+  if (!p2) return p1;
+  const [x1, y1] = p1, [x2, y2] = p2;
+  if (x1 === x2 && mod(y1 + y2, P) === 0n) return null;
+  let s;
+  if (x1 === x2 && y1 === y2) { if (y1 === 0n) return null; s = mod(3n * x1 * x1 * inv(2n * y1, P), P); }
+  else s = mod((y2 - y1) * inv(x2 - x1, P), P);
+  const x3 = mod(s * s - x1 - x2, P);
+  return [x3, mod(s * (x1 - x3) - y1, P)];
+}
+function pmul(k, pt) {
+  k = mod(k, N);
+  if (k === 0n || !pt) return null;
+  let r = null, a = pt;
+  while (k) { if (k & 1n) r = padd(r, a); a = padd(a, a); k >>= 1n; }
+  return r;
+}
+const big = (u8) => u8.reduce((v, b) => (v << 8n) | BigInt(b), 0n);
+function be32(v) { const o = new Uint8Array(32); for (let i = 31; i >= 0; i--) { o[i] = Number(v & 0xffn); v >>= 8n; } return o; }
+function eip191Hash(text) {
+  const body = enc.encode(text);
+  const pre = enc.encode("\x19Ethereum Signed Message:\n" + body.length);
+  const m = new Uint8Array(pre.length + body.length);
+  m.set(pre); m.set(body, pre.length);
+  return keccak256(m);
+}
+function addressOf(pt) {
+  const m = new Uint8Array(64); m.set(be32(pt[0])); m.set(be32(pt[1]), 32);
+  return "0x" + hex(keccak256(m).slice(12));
+}
+function recoverAddress(msgHash, sigHex) {
+  if (!/^0x[0-9a-fA-F]{130}$/.test(sigHex)) throw new Error("malformed signature");
+  const s16 = sigHex.slice(2).toLowerCase();
+  const r = BigInt("0x" + s16.slice(0, 64)), s = BigInt("0x" + s16.slice(64, 128)), vRaw = parseInt(s16.slice(128), 16);
+  let cands;
+  if (vRaw === 27 || vRaw === 28) cands = [vRaw - 27]; else if (vRaw === 0 || vRaw === 1) cands = [0, 1]; else throw new Error("invalid recovery id");
+  if (r < 1n || r >= N || s < 1n || s >= N) throw new Error("invalid r or s");
+  const z = big(msgHash);
+  for (const rid of cands) {
+    const v = BigInt(rid + 27), x = r;
+    const rhs = mod(powmod(x, 3n, P) + 7n, P);
+    const beta = powmod(rhs, (P + 1n) / 4n, P);
+    const y = ((v % 2n) ^ (beta % 2n)) ? beta : P - beta;
+    if (mod(rhs - y * y, P) !== 0n) continue;
+    const R = [x, y];
+    const qr = padd(pmul(mod(N - z, N), G), pmul(s, R));
+    if (!qr) continue;
+    const pub = pmul(inv(r, N), qr);
+    if (!pub) continue;
+    const left = pmul(s, R), right = padd(pmul(z, G), pmul(r, pub));
+    if (!left || !right || left[0] !== right[0] || left[1] !== right[1]) continue;
+    return addressOf(pub);
+  }
+  throw new Error("no valid point");
+}
+
+/* ---------- receipts (mirror of sealed/receipt.py and sealed/verify.py) ---------- */
+function canon(v) {
+  if (v === null || typeof v !== "object") return JSON.stringify(v);
+  if (Array.isArray(v)) return "[" + v.map(canon).join(",") + "]";
+  return "{" + Object.keys(v).sort().map((k) => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}";
+}
+async function receiptHash(receipt) {
+  const copy = {};
+  for (const k of Object.keys(receipt)) if (k !== "receipt_sha256") copy[k] = receipt[k];
+  return sha256hex(enc.encode(canon(copy)));
+}
+function parseSignedText(text) {
+  const parts = text.split(":");
+  if (parts.length !== 2 && parts.length !== 3) throw new Error("invalid signed text format");
+  const [req, resp] = parts.slice(-2);
+  if (!/^[0-9a-f]{64}$/.test(req) || !/^[0-9a-f]{64}$/.test(resp)) throw new Error("invalid hash in signed text");
+  return [req, resp];
+}
+async function verifyReceipt(item) {
+  const raw = Object.fromEntries(Object.entries(item.files).map(([k, v]) => [k, b64bytes(v)]));
+  const receipt = JSON.parse(utf8.decode(raw["receipt.json"]));
+  const sig = JSON.parse(utf8.decode(raw["signature.json"]));
+  const responseText = utf8.decode(raw["response.txt"]);
+  const reqHash = await sha256hex(raw["request.json"]);
+  const respHash = await sha256hex(raw["response.txt"]);
+  const checks = [];
+  const add = (ok, label, detail) => checks.push({ ok, label, detail });
+  add(reqHash === receipt.request_sha256, "Request hash", "SHA-256 of the exact request bytes = " + short(reqHash));
+  add(respHash === receipt.response_sha256, "Response hash", "SHA-256 of the exact response bytes = " + short(respHash));
+  let signer = "", sigOk = false, signedOk = false;
+  try {
+    const [sReq, sResp] = parseSignedText(sig.text);
+    signedOk = sReq === reqHash && sResp === respHash;
+    signer = recoverAddress(eip191Hash(sig.text), sig.signature);
+    sigOk = signedOk && signer.toLowerCase() === String(sig.signing_address).toLowerCase();
+  } catch (e) { signer = "error: " + e.message; }
+  add(signedOk, "Signed text covers these hashes", "the text NEAR AI signed is " + "<model>:<request hash>:<response hash>");
+  add(sigOk, "Signature (EIP-191)", "recovered signer " + signer);
+  add(String(receipt.signing_address).toLowerCase() === String(sig.signing_address).toLowerCase(), "Signer recorded in the receipt", receipt.signing_address);
+  let chatOk = false;
+  try { chatOk = receipt.chat_id === JSON.parse(responseText).id; } catch (e) { chatOk = false; }
+  add(chatOk, "Chat id", "receipt and signed response name the same chat " + receipt.chat_id);
+  const rh = await receiptHash(receipt);
+  add(rh === receipt.receipt_sha256, "Receipt hash", "canonical JSON of the receipt = " + short(rh));
+  return { receipt, raw, checks, signer, ok: checks.every((c) => c.ok) };
+}
+const short = (h) => (h.length > 20 ? h.slice(0, 10) + "…" + h.slice(-8) : h);
+
+/* ---------- rendering ---------- */
+const PLACEHOLDER = /(\[[A-Z]+_\d+\])/g;
+function textWithMarks(parent, text) {
+  for (const part of text.split(PLACEHOLDER)) {
+    if (!part) continue;
+    if (/^\[[A-Z]+_\d+\]$/.test(part)) { const m = document.createElement("mark"); m.textContent = part; parent.appendChild(m); }
+    else parent.appendChild(document.createTextNode(part));
+  }
+}
+function textWithBold(parent, text) {
+  for (const part of text.split(/(\*\*[^*\n]+\*\*)/g)) {
+    if (!part) continue;
+    if (/^\*\*[^*\n]+\*\*$/.test(part)) { const b = document.createElement("strong"); textWithMarks(b, part.slice(2, -2)); parent.appendChild(b); }
+    else textWithMarks(parent, part);
+  }
+}
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  for (const k of kids) e.append(k);
+  return e;
+}
+function detailsBlock(title, hint, body) {
+  const d = el("details", {});
+  const s = el("summary", {}, title);
+  if (hint) s.append(el("span", { class: "hint" }, hint));
+  d.append(s, body);
+  return d;
+}
+function renderReceipt(res, chainOk, index) {
+  const req = JSON.parse(utf8.decode(res.raw["request.json"]));
+  const user = (req.messages.find((m) => m.role === "user") || {}).content || "";
+  const question = (user.match(/^Question:\s*(.*)$/m) || [, "(question)"])[1];
+  const resp = JSON.parse(utf8.decode(res.raw["response.txt"]));
+  const content = (((resp.choices || [])[0] || {}).message || {}).content || "";
+  const answer = utf8.decode(res.raw["answer.md"]);
+  const r = res.receipt;
+
+  const sec = el("section", { class: "panel" });
+  sec.append(el("h2", {}, "Receipt " + RUN.receipts[index].id + (res.ok && chainOk ? "  ✓" : "  ✗")));
+  sec.append(el("div", { class: "q" }, question));
+  const meta = el("div", { class: "meta" });
+  meta.append("Model ", el("code", {}, r.model), " · tier ", el("code", {}, r.model_tier), " · ", r.created_utc, " · attestation ", el("code", {}, r.attestation_level));
+  sec.append(meta);
+  const chips = el("div", { class: "chips" });
+  for (const [k, v] of Object.entries(r.replaced || {})) chips.append(el("span", { class: "chip" }, v + " × " + k + " replaced"));
+  sec.append(chips);
+
+  const tbl = el("table", { class: "checks" });
+  for (const c of res.checks) {
+    const tr = el("tr", {});
+    tr.append(el("td", { class: c.ok ? "pass" : "fail" }, c.ok ? "✓" : "✗"), el("td", {}, el("strong", {}, c.label), el("br"), el("span", { class: "meta" }, c.detail)));
+    tbl.append(tr);
+  }
+  const chainRow = el("tr", {});
+  chainRow.append(el("td", { class: chainOk ? "pass" : "fail" }, chainOk ? "✓" : "✗"),
+    el("td", {}, el("strong", {}, "Hash chain"), el("br"), el("span", { class: "meta" }, "previous receipt = " + short(r.prev_receipt_sha256))));
+  tbl.append(chainRow);
+  sec.append(tbl);
+
+  const sent = el("pre", {}); textWithMarks(sent, user);
+  sec.append(detailsBlock("What left the machine", "the exact user message sent to NEAR AI Cloud; placeholders instead of names", sent));
+  const back = el("div", { class: "prose" }); textWithBold(back, content.trim());
+  sec.append(detailsBlock("What came back", "the signed answer, still with placeholders", back));
+  const restored = el("div", { class: "prose" }); textWithBold(restored, answer.trim());
+  sec.append(detailsBlock("Restored on the user's machine", "names put back locally; in real use this file never leaves the machine (here the case is invented)", restored));
+  return sec;
+}
+
+async function runAll() {
+  const host = document.getElementById("receipts");
+  const main = document.getElementById("sum-main"), detail = document.getElementById("sum-detail");
+  host.textContent = ""; main.className = "big"; main.textContent = "Checking…"; detail.textContent = "";
+  if (!window.crypto || !crypto.subtle) { main.textContent = "This browser offers no WebCrypto here; use the Python commands below."; main.className = "big bad"; return; }
+  const t0 = performance.now();
+  const results = [];
+  for (const item of RUN.receipts) results.push(await verifyReceipt(item));
+  let prev = "0".repeat(64), chainAll = true, numbering = true;
+  const signers = new Set();
+  results.forEach((res, i) => {
+    const okLink = res.receipt.prev_receipt_sha256 === prev;
+    if (RUN.receipts[i].id !== String(i + 1).padStart(4, "0")) numbering = false;
+    chainAll = chainAll && okLink;
+    prev = res.receipt.receipt_sha256;
+    signers.add(res.signer);
+    host.append(renderReceipt(res, okLink, i));
+  });
+  const okCount = results.filter((r) => r.ok).length;
+  const allOk = okCount === results.length && chainAll && numbering;
+  main.textContent = allOk ? okCount + " of " + results.length + " receipts verified · chain intact" : "Check failed: " + okCount + " of " + results.length + " receipts verified" + (chainAll ? "" : ", chain broken");
+  main.className = "big " + (allOk ? "ok" : "bad");
+  const signerList = [...signers].join(", ");
+  detail.textContent = "Signer " + signerList + " · " + Math.round(performance.now() - t0) + " ms in this browser";
+  document.getElementById("signer-full").textContent = signerList;
+}
+document.getElementById("rerun").addEventListener("click", runAll);
+runAll().catch((e) => { const m = document.getElementById("sum-main"); m.textContent = "Error: " + e.message; m.className = "big bad"; });
+</script>
+</body>
+</html>
