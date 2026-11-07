@@ -1,0 +1,54 @@
+# python -m sealed attest <receipt> --network, and --model Qwen/Qwen3.8-27B (fresh report)
+# run on 2026-11-07 10:11 UTC, dcap-qvl 0.7.1, no API key
+
+stored report of receipt fixtures/run1/0001
+  signer  0x835ab53d20294ef795906dff21ae4c045336aa26
+  nonce   39a148f7543b46cfab26fc73d245e8ba7b5a87984b6ce08b4423d3f200be4ef3
+  ok      report_data_binds_signer
+  ok      report_data_embeds_nonce
+  ok      gpu_evidence_uses_nonce
+  ok      compose_matches_mr_config
+  ok      mr_td_matches_tcb_info
+  ok      intel_quote_signature_and_tcb: status UpToDate, advisories []
+  ok      nvidia_gpu_verdict: overall verdict True
+  level   full
+exit 0
+
+stored report of receipt fixtures/run1/0002
+  signer  0x835ab53d20294ef795906dff21ae4c045336aa26
+  nonce   148564d669d67657a3f4d945c1e4ae08daf02658f0ef20cfe2e72a11128921f9
+  ok      report_data_binds_signer
+  ok      report_data_embeds_nonce
+  ok      gpu_evidence_uses_nonce
+  ok      compose_matches_mr_config
+  ok      mr_td_matches_tcb_info
+  ok      intel_quote_signature_and_tcb: status UpToDate, advisories []
+  ok      nvidia_gpu_verdict: overall verdict True
+  level   full
+exit 0
+
+stored report of receipt fixtures/run1/0003
+  signer  0x835ab53d20294ef795906dff21ae4c045336aa26
+  nonce   c47b471a7161b01f684f06918a70c726c987d22ab22cd19852c131cfc685d163
+  ok      report_data_binds_signer
+  ok      report_data_embeds_nonce
+  ok      gpu_evidence_uses_nonce
+  ok      compose_matches_mr_config
+  ok      mr_td_matches_tcb_info
+  ok      intel_quote_signature_and_tcb: status UpToDate, advisories []
+  ok      nvidia_gpu_verdict: overall verdict True
+  level   full
+exit 0
+
+fresh report for Qwen/Qwen3.8-27B, model attestation #1
+  signer  0x835ab53d20294ef795906dff21ae4c045336aa26
+  nonce   568dcb4ec19447a04529420babf667dad43874aed2144977092950f01a5a6f5e
+  ok      report_data_binds_signer
+  ok      report_data_embeds_nonce
+  ok      gpu_evidence_uses_nonce
+  ok      compose_matches_mr_config
+  ok      mr_td_matches_tcb_info
+  ok      intel_quote_signature_and_tcb: status UpToDate, advisories []
+  ok      nvidia_gpu_verdict: overall verdict True
+  level   full
+exit 0

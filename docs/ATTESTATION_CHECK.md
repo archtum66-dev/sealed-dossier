@@ -37,3 +37,21 @@ python -m sealed verify fixtures/run1/0001      # in this repository: prints the
 
 Compare the `Signing address` under "Model attestations" with the `signer` line of `sealed verify`.
 Keys can rotate: if the addresses differ, make a new short run and check again.
+
+## 7 Nov 2026: Sealed Dossier checks the stored reports itself
+
+`python -m sealed attest <receipt> --network` (module `sealed/attest.py`) checks the report **stored in each receipt**, the one fetched with the run's own nonce on 31 Oct 2026, not only a fresh one:
+
+| Check | How | 0001 | 0002 | 0003 |
+|---|---|---|---|---|
+| Report data binds the signer | TDX quote, first 32 bytes of report data = padded signing address | ok | ok | ok |
+| Report data embeds the run's nonce | last 32 bytes = `request_nonce` of the stored report | ok | ok | ok |
+| GPU evidence uses that nonce | `nvidia_payload.nonce` | ok | ok | ok |
+| Compose manifest | `01` + SHA-256(app_compose) = `mr_config_id` of the quote; `mr_td` = TCB info | ok | ok | ok |
+| Intel quote signature and TCB | `dcap-qvl` with fresh collateral (network) | `UpToDate` | `UpToDate` | `UpToDate` |
+| NVIDIA verdict | NVIDIA remote attestation of the stored GPU evidence (network) | True | True | True |
+
+**Level `full` for all three receipts, signer `0x835ab53d20294ef795906dff21ae4c045336aa26`.** A fresh report (`--model Qwen/Qwen3.8-27B`, own nonce) gave the same signer and level. Output: [`fixtures/attestation-check/2026-11-07_sealed_attest.txt`](../fixtures/attestation-check/2026-11-07_sealed_attest.txt).
+
+- The offline part needs only the standard library and runs in the tests (`tests/test_attest.py`), including tampered signer, nonce and compose manifest.
+- Still not shown: that the container images are what the source says (Sigstore is not checked here), and NVIDIA's token signature (read like the official verifier does).

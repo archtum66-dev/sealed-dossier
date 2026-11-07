@@ -183,6 +183,62 @@ def _cmd_demo(args: argparse.Namespace) -> int:
     return 0 if all_ok else 5
 
 
+def _print_attest(label: str, result: dict) -> None:
+    print(f"{label}")
+    print(f"  signer  {result['signer']}")
+    print(f"  nonce   {result['nonce']}")
+    for name, ok in result["checks"].items():
+        detail = result["details"].get(name, "")
+        print(f"  {'ok  ' if ok else 'FAIL'}    {name}{(': ' + detail) if detail else ''}")
+    print(f"  level   {result['level']}")
+
+
+def _cmd_attest(args: argparse.Namespace) -> int:
+    from sealed import attest
+
+    results = []
+    if args.model:
+        nonce = attest.new_nonce()
+        try:
+            report = attest.fetch_report(args.model, nonce)
+        except (OSError, ValueError) as exc:
+            _print_error(f"attestation report: {exc}")
+            return 4
+        for i, item in enumerate(report.get("model_attestations") or [], start=1):
+            res = attest.check_attestation(item, nonce, network=True)
+            _print_attest(f"fresh report for {args.model}, model attestation #{i}", res)
+            results.append(res)
+    else:
+        if not args.receipt:
+            _print_error("give a receipt directory or --model")
+            return 2
+        rdir = Path(args.receipt)
+        try:
+            receipt = json.loads((rdir / "receipt.json").read_text(encoding="utf-8"))
+            report = json.loads((rdir / "attestation.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            _print_error(f"cannot read receipt: {exc}")
+            return 2
+        signer = str(receipt.get("signing_address", "")).lower()
+        items = [
+            a for a in report.get("model_attestations") or []
+            if str(a.get("signing_address", "")).lower() == signer
+        ]
+        if not items:
+            _print_error("the stored report does not list the receipt's signer")
+            return 5
+        res = attest.check_attestation(items[0], network=args.network)
+        _print_attest(f"stored report of receipt {rdir}", res)
+        if not args.network:
+            print("  (Intel quote signature and NVIDIA verdict not checked: add --network)")
+        results.append(res)
+    if not results:
+        _print_error("no model attestation in the report")
+        return 5
+    wanted = "full" if (args.network or args.model) else "quote_binds_signer"
+    return 0 if all(r["level"] == wanted for r in results) else 5
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sealed")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -217,6 +273,15 @@ def main(argv: list[str] | None = None) -> int:
     p_models = sub.add_parser("models", help="list models and tiers")
     p_models.add_argument("--base-url")
     p_models.set_defaults(func=_cmd_models)
+
+    p_attest = sub.add_parser(
+        "attest", help="check the attestation of a receipt's signer (TDX, GPU, compose)"
+    )
+    p_attest.add_argument("receipt", nargs="?", help="receipt directory (uses its stored report)")
+    p_attest.add_argument("--network", action="store_true",
+                          help="also check the Intel quote signature (dcap-qvl) and NVIDIA's verdict")
+    p_attest.add_argument("--model", help="fetch a fresh report for this model instead (network)")
+    p_attest.set_defaults(func=_cmd_attest)
 
     p_demo = sub.add_parser("demo", help="replay a stored fixture run")
     p_demo.add_argument("--fixture", default="fixtures/run1")
