@@ -50,6 +50,13 @@ The sample case in `examples/` is **invented**.
 - **Attestation:** at run time the tool fetches the attestation report with a fresh random nonce, checks that the signer of the answer is listed in it and stores the report in the receipt (`report_lists_signer`). Afterwards `python -m sealed attest <receipt>` checks that **stored** report: offline (standard library) that the TDX quote's report data binds the signer and the run's nonce, that the GPU evidence carries the same nonce and that the compose manifest matches `mr_config`; with `--network` also the Intel quote signature and TCB status (through `dcap-qvl`, as NEAR AI's official verifier does) and NVIDIA's verdict on the GPU evidence. On 7 Nov 2026 all three receipts reached level **`full`** with signer `0x835a…aa26`; a fresh report gave the same signer and level. Limits: NVIDIA's answer is read from its token without checking the token's signature (as in the official verifier); the Intel check needs the optional `dcap-qvl` and network. Details and the earlier run of the official verifier: [`docs/ATTESTATION_CHECK.md`](docs/ATTESTATION_CHECK.md).
 - **Limits** of the pseudonymiser, of the TEE and of the whole approach: [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 
+## Who it is for, and what comes next
+
+- **Who:** lawyers, fiduciaries and advisors who want AI help on case files but cannot send client names to a cloud model.
+- **What changes for them:** the names never leave the machine, and each answer comes with a receipt that anyone can check offline: both hashes, the signer, the hash chain and the attestation report stored with it.
+- **Where it stands:** a command-line tool and a browser replay, with one recorded live run of three questions on an invented case. It is not a product yet, and the name replacement only covers what the user lists (see `docs/THREAT_MODEL.md`).
+- **Next steps (not started):** (1) suggest names found in the dossier for the user to confirm, so fewer names are missed; (2) a simple desktop front end for people who do not use a command line; (3) export a receipt chain as one file for the case record.
+
 ## Use it on your own dossier
 
 ```
